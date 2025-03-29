@@ -153,8 +153,7 @@ public class ProjectDao extends DaoBase {
 	// Connection object conn is passed into each method as a param
 	// so no need to obtain connection from DbConnect.getConnection()
 	//
-	private List<Category> fetchCategoriesForProject(Connection conn, Integer projectId) 
-			throws SQLException {
+	private List<Category> fetchCategoriesForProject(Connection conn, Integer projectId) throws SQLException {
 		// @formatter:off
 		String sql = ""
 				+ "SELECT c.* FROM " + CATEGORY_TABLE + " c "
@@ -177,8 +176,7 @@ public class ProjectDao extends DaoBase {
 	}
 
 	private List<Step> fetchStepsForProject(Connection conn, Integer projectId) throws SQLException {
-		String sql = "SELECT * FROM " + STEP_TABLE + 
-				" WHERE project_id = ?";
+		String sql = "SELECT * FROM " + STEP_TABLE + " WHERE project_id = ?";
 
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			setParameter(stmt, 1, projectId, Integer.class);
@@ -195,8 +193,7 @@ public class ProjectDao extends DaoBase {
 	}
 
 	private List<Material> fetchMaterialsForProject(Connection conn, Integer projectId) throws SQLException {
-		String sql = "SELECT * FROM " + MATERIAL_TABLE 
-				+ " WHERE project_id = ?";
+		String sql = "SELECT * FROM " + MATERIAL_TABLE + " WHERE project_id = ?";
 
 		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 			setParameter(stmt, 1, projectId, Integer.class);
@@ -211,4 +208,85 @@ public class ProjectDao extends DaoBase {
 			}
 		}
 	}
+
+//
+//method updates project's details in db
+//
+	public boolean modifyProjectDetails(Project project) {
+//sql update statement with param placeholders
+		// @formatter:off
+	    String sql = ""
+	            + "UPDATE " + PROJECT_TABLE + " SET "
+	            + "project_name = ?, "
+	            + "estimated_hours = ?, "
+	            + "actual_hours = ?, "
+	            + "difficulty = ?, "
+	            + "notes = ? "
+	            + "WHERE project_id = ?";
+	    // @formatter:on
+
+//obtain connection with db
+		try (Connection conn = DbConnection.getConnection()) {
+//start transaction 			
+			startTransaction(conn);
+
+//obtain preparedStatement object and set param values 
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+//set params for all fields to be updated		
+				setParameter(stmt, 1, project.getProjectName(), String.class);
+				setParameter(stmt, 2, project.getEstimatedHours(), BigDecimal.class);
+				setParameter(stmt, 3, project.getActualHours(), BigDecimal.class);
+				setParameter(stmt, 4, project.getDifficulty(), Integer.class);
+				setParameter(stmt, 5, project.getNotes(), String.class);
+				setParameter(stmt, 6, project.getProjectId(), Integer.class);
+
+//call executeUpdate on prepStatement to commit transaction
+				boolean modified = stmt.executeUpdate() == 1;
+				commitTransaction(conn);
+
+//method returns 0 rows affected (false), or 1 row (true)
+				return modified;
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+		}
+
+		catch (SQLException e) {
+			throw new DbException(e);
+
+		}
+	}
+
+//
+//method deletes a project and associated details from db
+//child rows will be deleted through on delete cascade 
+//
+	public boolean deleteProject(Integer projectId) {
+		String sql = "DELETE FROM " + PROJECT_TABLE + " WHERE project_id = ?";
+
+		try (Connection conn = DbConnection.getConnection()) {
+			startTransaction(conn);
+
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+//set project id param
+				setParameter(stmt, 1, projectId, Integer.class);
+
+//perform deletion and check for rows affected
+				boolean deleted = stmt.executeUpdate() == 1;
+
+//commit transaction 
+				commitTransaction(conn);
+
+//return true if row deleted, else false
+				return deleted;
+			} catch (Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
 }

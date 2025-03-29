@@ -10,16 +10,20 @@ import projects.exception.DbException;
 import projects.service.ProjectService;
 
 public class ProjectsApp {
-
+//these are the app menu selections	
 	// @formatter:off
 	private List<String> operations = List.of(
 					"1) Add a project", 
 					"2) List projects", 
-					"3) Select a project"
+					"3) Select a project",
+					"4) Update project details", 
+					"5) Delete a project"
 					
 					);		
 	// @formatter:on
-
+//
+//scanner looks for user input in console
+//
 	private Scanner scanner = new Scanner(System.in);
 	private ProjectService projectService = new ProjectService();
 
@@ -27,6 +31,9 @@ public class ProjectsApp {
 		new ProjectsApp().processUserSelection();
 	}
 
+//
+//switch statements make method calls for user functions
+//
 	private void processUserSelection() {
 		boolean done = false;
 		while (!done) {
@@ -50,6 +57,14 @@ public class ProjectsApp {
 					selectProject();
 					break;
 
+				case 4:
+					updateProjectDetails();
+					break;
+					
+				case 5:
+					deleteProject();
+					break;
+
 				default:
 					System.out.println("\n" + selection + " is not a valid selection. Try again.");
 				}
@@ -59,18 +74,6 @@ public class ProjectsApp {
 		}
 	}
 
-	private void selectProject() {
-		listProjects();
-		Integer projectId = getIntInput("Enter a project ID to select a project");
-
-//unselect current project
-		curProject = null;
-
-//throw exception if invalid project id entered
-		curProject = projectService.fetchProjectById(projectId);
-
-	}
-
 	private int getUserSelection() {
 		printOperations();
 
@@ -78,6 +81,8 @@ public class ProjectsApp {
 
 		return Objects.isNull(input) ? -1 : input;
 	}
+
+	private Project curProject;
 
 	private void printOperations() {
 		System.out.println("\nThese are the available selections. Press the Enter key to quit:");
@@ -132,11 +137,6 @@ public class ProjectsApp {
 		}
 	}
 
-	private boolean exitMenu() {
-		System.out.println("Exiting the application.");
-		return true;
-	}
-
 	private void createProject() {
 		String projectName = getStringInput("Enter the project name");
 		BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours");
@@ -166,6 +166,83 @@ public class ProjectsApp {
 				project -> System.out.println("  " + project.getProjectId() + ": " + project.getProjectName()));
 	}
 
-	private Project curProject;
+	private void selectProject() {
+		listProjects();
+		Integer projectId = getIntInput("Enter a project ID to select a project");
+
+//un-select current project
+		curProject = null;
+
+//throw exception if invalid project id entered
+		curProject = projectService.fetchProjectById(projectId);
+	}
+	
+//implement the updateProject Details method 
+//this method first checks if a project is selected
+	private void updateProjectDetails() {
+		if(Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project.");
+			return;
+		}
+//get user input for project fields, displaying any curProject values
+		String projectName = getStringInput("Enter the project name [" + curProject.getProjectName() + "]");
+		BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours [" + curProject.getEstimatedHours() + "]");
+		BigDecimal actualHours = getDecimalInput("Enter the actual hours [" + curProject.getActualHours() + "]");
+		Integer difficulty = getIntInput("Enter the project difficulty (1-5) [" + curProject.getDifficulty() + "]");
+		String notes = getStringInput("Enter the project notes [" + curProject.getNotes() + "]");
+
+//create new project object with updated values
+		Project project = new Project();
+
+//add updated values to project object, else use existing values
+		project.setProjectName(Objects.isNull(projectName) ? 
+				curProject.getProjectName() : projectName);
+		project.setEstimatedHours(Objects.isNull(estimatedHours) ? 
+				curProject.getEstimatedHours() : estimatedHours);
+	    project.setActualHours(Objects.isNull(actualHours) ? 
+	    		curProject.getActualHours() : actualHours);
+	    project.setDifficulty(Objects.isNull(difficulty) ? 
+	    		curProject.getDifficulty() : difficulty);
+	    project.setNotes(Objects.isNull(notes) 
+	    		? curProject.getNotes() : notes);
+
+//set projectID from the current project
+	    project.setProjectId(curProject.getProjectId());
+	    
+//call project service to make modifications
+	    projectService.modifyProjectDetails(project);
+	    
+//re-read current project to show updated details
+	    curProject = projectService.fetchProjectById(curProject.getProjectId());
+	    System.out.println("\nProject details have been updated.");
+	}
+	
+//implement delete project method 
+	private void deleteProject() {
+		listProjects();
+		
+//get project id to delete
+		Integer projectId = getIntInput("Enter the ID of the project to delete");
+		
+//exit if no id given
+		if(Objects.isNull(projectId)) {
+			return;
+		}
+
+//call service to delete the project
+		projectService.deleteProject(projectId);
+		
+		System.out.println("\nProject " + projectId + " was deleted successfully.");
+		
+//if deleted proj was cur proj then reset cur proj
+		if(Objects.nonNull(curProject) && projectId.equals(curProject.getProjectId())) {
+			curProject = null;
+		}
+}
+
+	private boolean exitMenu() {
+		System.out.println("Exiting the application.");
+		return true;
+	}
 
 }

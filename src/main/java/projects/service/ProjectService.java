@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 
 import projects.dao.ProjectDao;
 import projects.entity.Project;
+import projects.exception.DbException;
 //
 //service layer/class is limited in scope, but enables: 
 //separation of input/output, biz logic, db reads and writes
@@ -19,7 +20,7 @@ public class ProjectService {
 		return projectDao.insertProject(project);
 	}
 
-//method returns results of call to DAO class
+//methods return results of call to DAO class
 	public List<Project> fetchAllProjects() {
 		return projectDao.fetchAllProjects();
 	}
@@ -29,5 +30,22 @@ public class ProjectService {
 				() -> new NoSuchElementException(
 						"Project with project ID=" + projectId 
 						+ " does not exist."));
+	}
+
+//method calls DAO to update project details, pass project object
+	public void modifyProjectDetails(Project project) {
+//check DAO if update successful, return details to the caller (menu app class)
+//if project not found, throw exception
+		if(!projectDao.modifyProjectDetails(project)) {
+			throw new DbException("Project with ID="
+					+ project.getProjectId() + " does not exist.");
+		}
+	}
+//delete project and its details from db
+	public void deleteProject(Integer projectId) {
+//call DAO method to confirm deletion
+		if(!projectDao.deleteProject(projectId)) {
+			throw new DbException("Project with ID=" + projectId + " does not exist.");
+		}
 	}
 }
