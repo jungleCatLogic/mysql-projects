@@ -1,4 +1,4 @@
-package projects;
+ package projects;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,7 +19,7 @@ public class ProjectsApp {
 					"4) Update project details", 
 					"5) Delete a project"
 					
-					);		
+					);		 
 	// @formatter:on
 //
 //scanner looks for user input in console
